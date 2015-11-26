@@ -1,11 +1,11 @@
 /*
-    File:       NullAuth.c
+    File:       NullAuthPlugin.c
 
     Contains:   An empty authorization plug-in, for logging and testing.
 
     Written by: DTS
 
-    Copyright:  Copyright (c) 2007 Apple Inc. All Rights Reserved.
+    Copyright:  Copyright (c) 2010 Apple Inc. All Rights Reserved.
 
     Disclaimer: IMPORTANT: This Apple software is supplied to you by Apple Inc.
                 ("Apple") in consideration of your agreement to the following
@@ -73,8 +73,13 @@
 // In the standard configuration, all of my debug output goes to syslog.
 // To see this output:
 //
-// 1. Edit /etc/syslog.conf and change "kern.debug" to "*.debug".
-//    This sends all debugging output to the syslog.
+// 1. Edit /etc/syslog.conf and insert the following line at beginning.
+//
+// *.debug     /var/log/debug.log
+//
+// IMPORTANT:
+// In the above line the two fields ("*.debug" and "/var/log/debug.log") must be 
+// separated by a tab character.
 //
 // 2. Send syslogd a SIGHUP.
 //
@@ -82,7 +87,7 @@
 //
 // 3. Read the system log.
 //
-//    $ tail -f /var/log/system.log
+//    $ tail -f /var/log/debug.log
 
 #if 1
     #define DEBUGLOG(...) syslog(LOG_DEBUG, __VA_ARGS__);
@@ -485,7 +490,11 @@ static void PrintTypedData(const char *scope, const char *key, KeyType type, con
                 #define kIDontCareIfMyPasswordIsLogged 0
                 
                 if ( (strcmp(key, "password") == 0) && ! kIDontCareIfMyPasswordIsLogged ) {
-                    DEBUGLOG("%s key='%s', value='********'", scope, key);
+                    if (strlen(buf) == 0) {
+                        DEBUGLOG("%s key='%s', value=''", scope, key);
+                    } else {
+                        DEBUGLOG("%s key='%s', value='********'", scope, key);
+                    }
                 } else {
                     DEBUGLOG("%s key='%s', value='%s'", scope, key, (const char *) buf);
                 }
@@ -701,7 +710,7 @@ static OSStatus MechanismCreate(
     // Allocate the space for the MechanismRecord.
     
     err = noErr;
-    mechanism = (MechanismRecord *) malloc(sizeof(mechanism));
+    mechanism = (MechanismRecord *) malloc(sizeof(*mechanism));
     if (mechanism == NULL) {
         err = memFullErr;
     }
